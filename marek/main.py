@@ -4,20 +4,21 @@ import sys
 from imp import load_source
 from argparse import ArgumentParser
 from shutil import copytree, Error
-from os import listdir, rename, walk, remove
-from os.path import expanduser, join, isdir, exists, basename, abspath
+from os import listdir, rename, walk
+from os.path import expanduser, join, isdir, exists, abspath
 
 
 RULES_FILE = '.rules.py'
-MAREK_PATH = [
+TEMPLATE_PATHS = [
     "/usr/share/marek",
     expanduser("~/.marek")
 ]
 
 
 def get_available_templates():
+    """ @returns (dict): {"template_name": "/path/to/template_name"} """
     dirs = {}
-    for tdir in reversed(TEMPL_PATH):
+    for tdir in reversed(TEMPLATE_PATHS):
         if not (tdir and exists(tdir)):
             continue
         for template in listdir(tdir):
@@ -29,16 +30,18 @@ def get_available_templates():
 
 
 def render_string_template(template, data):
+    """ Default string template renderer """
     from string import Template
-    return Template(string).safe_substitute(**data)
+    return Template(template).safe_substitute(**data)
 
 
 def load_rules(template_path, project_name, quiet):
+    """ Loads rules from the RULES_FILE """
     rules_file = join(template_path, RULES_FILE)
-    if not os.path.exists(rules_file):
+    if not exists(rules_file):
         return None
     import __builtin__
-    __builtin__.project_name = basename(clone_path)
+    __builtin__.project_name = project_name
     __builtin__.quiet = quiet
     rules = load_source('rules', rules_file)
     del(__builtin__.project_name)
@@ -47,31 +50,33 @@ def load_rules(template_path, project_name, quiet):
 
 
 def process_clone(clone_path, rules):
+    """ Deals with cloned template """
     # init string processing function and template dict
-    render_string_template = getattr(rules, "render_string_template", render_string_template)
+    render = getattr(rules, "render", render_string_template)
     data = getattr(rules, "data", {})
     # process files and dirs
     for path, dirs, files in walk(clone_path):
         # process dirs
         for tdir in list(dirs):
-            ndir = render_string_template(tdir, data)
+            ndir = render(tdir, data)
             if tdir != ndir:
-                rename(join(path, tdir), join(path, ndir)):
+                rename(join(path, tdir), join(path, ndir))
                 dirs.remove(tdir)
                 dirs.append(ndir)
         # process files
         for tfile in files:
             old_name = join(path, tfile)
             with open(old_name, "r+") as f:
-                info = render_string_template(f.read(), data)
+                info = render(f.read(), data)
                 f.seek(0)
                 f.write(info)
-            new_name = render_string_template(old_name, data)
+            new_name = render(old_name, data)
             if old_name != new_name:
                 rename(old_name, new_name)
 
 
 def process_template(template_name, project_name, quiet=False):
+    """ Tries to clone the template into a project located in the current directory """
     try:
         assert template_name
         assert project_name
@@ -94,6 +99,7 @@ def process_template(template_name, project_name, quiet=False):
 
 
 def show_templates():
+    """ Shows all available templates """
     print "Avaliable templates:"
     for template in sorted(get_available_templates().values()):
         print template
@@ -101,6 +107,7 @@ def show_templates():
 
 
 def main():
+    """ Entry point """
     parser = ArgumentParser()
     parser.add_argument('-q', '--quiet', action='store_true', help='Use default values without asking')
     parser.add_argument('-l', '--list', action='store_true', help='Show available templates')
