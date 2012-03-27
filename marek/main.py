@@ -1,103 +1,116 @@
-import os
+""" Marek: tool for creating various projects from templates. """
+
 import sys
-import argparse
-import shutil
 import imp
+from argparse import ArgumentParser
+from shutil import copytree, Error
+from os import listdir, rename, walk, remove
+from os.path import expanduser, join, isdir, exists, basename, abspath
 
 
 RULES_FILE = '.rules.py'
-TEMPL_PATH = [
-    
+MAREK_PATH = [
+    "/usr/share/marek",
+    expanduser("~/.marek")
 ]
 
 
-def list_tpls():
-    """
-    @returns: (dict) {"tpl_name": "/path/to/tpl"}
-    """
+def get_available_templates():
     dirs = {}
     for tdir in reversed(TEMPL_PATH):
-        if not (tdir and os.path.exists(tdir)):
+        if not (tdir and exists(tdir)):
             continue
-        for tpl in os.listdir(tdir):
-            tpl_dir = os.path.join(tdir.rstrip("/"), tpl)
-            if not os.path.isdir(tpl_dir):
+        for tpl in listdir(tdir):
+            tpl_dir = join(tdir.rstrip("/"), tpl)
+            if not isdir(tpl_dir):
                 continue
             dirs[tpl] = tpl_dir
     return dirs
 
 
-def proc_string(string, data):
+def render_template(template, data):
     from string import Template
-    s = Template(string)
-    return s.safe_substitute(**data)
+    return Template(string).safe_substitute(**data)
 
 
-def proc_clone(clone_path, quiet):
-    project_name = os.path.basename(clone_path)
+def load_rules(tpl_path, project_name, quiet):
+    rules_file = join(tpl_path, RULES_FILE)
+    #
+    if not os.path.exists(rules_file):
+        return None
+    #
+    import __builtin__
+    __builtin__.project_name = basename(clone_path)
+    __builtin__.quiet = quiet
+    rules = imp.load_source('rules', rules_file)
+    del(__builtin__.project_name)
+    del(__builtin__.quiet)
+    return rules
 
-    def rename(old, new):
+
+def proc_clone(clone_path, rules):
+
+    def _ren(old, new):
         if old != new:
-            os.rename(old, new)
+            rename(old, new)
             return True
         return False
 
-    # load rules
-    rules_file = os.path.join(clone_path, RULES_FILE)
-    rules = None
-    if os.path.exists(rules_file):
-        # make project_name and quiet globals for the rules file exclusively
-        import __builtin__
-        __builtin__.project_name = project_name
-        __builtin__.quiet = quiet
-        rules = imp.load_source('rules', rules_file)
-        del(__builtin__.project_name)
-        del(__builtin__.quiet)
-        # rules file is not needed in the clone
-        for to_rem in [rules_file, "%sc" % rules_file]:
-            os.remove(to_rem)
     # init string processing function and template dict
-    process_string = getattr(rules, "process_string", proc_string)
+    render_template = getattr(rules, "render_template", render_template)
     data = getattr(rules, "data", {})
-    data.update({"project_name": project_name})
     # process files and dirs
-    for path, dirs, files in os.walk(clone_path):
+    for path, dirs, files in walk(clone_path):
         # process dirs
         renamed_dirs = []
         for tdir in dirs:
-            ndir = proc_string(tdir, data)
-            if rename(os.path.join(path, tdir), os.path.join(path, ndir)):
+            ndir = render_template(tdir, data)
+            if _ren(join(path, tdir), join(path, ndir)):
                 dirs.remove(tdir)
                 renamed_dirs.append(ndir)
         dirs.extend(renamed_dirs)
         # process files
         for tfile in files:
-            old_name = os.path.join(path, tfile)
+            old_name = join(path, tfile)
             with open(old_name, "r+") as f:
                 info = process_string(f.read(), data)
                 f.seek(0)
                 f.write(info)
             new_name = process_string(old_name, data)
-            rename(old_name, new_name)
+            _ren(old_name, new_name)
 
 
 def proc_tpl(tpl_name, project_name, quiet=False):
-    clone_path = os.path.abspath(project_name)
     try:
-        tpl_path = list_tpls()[tpl_name]
+        assert tpl_name
+        assert project_name
+        clone_path = abspath(project_name)
+        tpl_path = get_available_templates()[tpl_name]
+        copytree(tpl_path, clone_path)
+        proc_clone(clone_path, load_rules(tpl_path, project_name, quiet))
+    except AssertionError:
+        print "Please specify a source template and project name."
+        sys.exit(1)
     except KeyError:
         print "Template %s was not found" % tpl_name
-        sys.exit(0)
-    try:
-        shutil.copytree(tpl_path, clone_path)
-        proc_clone(clone_path, quiet)
-    except shutil.Error, e:
+        sys.exit(1)
+    except Error, e:
         print "Cloning error: %s" % e
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print >> sys.stderr, "\nInterrupted"
         sys.exit(1)
 
 
+def show_templates():
+    print "Avaliable templates:"
+    for tpl in sorted(get_available_templates().values()):
+        print tpl
+    sys.exit(0)
+
+
 def main():
-    parser = argparse.ArgumentParser()
+    parser = ArgumentParser()
     parser.add_argument('-q', '--quiet', action='store_true', help='Use default values without asking')
     parser.add_argument('-l', '--list', action='store_true', help='Show available templates')
     parser.add_argument('template', nargs='?', default=None)
@@ -105,19 +118,9 @@ def main():
 
     opts = parser.parse_args()
     if opts.list:
-        print "Avaliable templates:"
-        for tpl in sorted(list_tpls().values()):
-            print tpl
-        sys.exit(0)
-
-    if opts.template is None:
-        print "Please specify a source template."
-        sys.exit(1)
-
-    try:
+        show_templates()
+    else:
         proc_tpl(opts.template, opts.project_name, opts.quiet)
-    except KeyboardInterrupt:
-        print >> sys.stderr, "\nInterrupted"
 
 
 if __name__ == "__main__":
