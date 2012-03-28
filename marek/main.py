@@ -101,7 +101,7 @@ def process_template(template_name, project_name, quiet=False):
 def show_templates():
     """ Shows all available templates """
     print "Avaliable templates:"
-    for template in sorted(get_available_templates().values()):
+    for template in sorted(get_available_templates().keys()):
         print template
     sys.exit(0)
 
