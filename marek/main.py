@@ -7,6 +7,8 @@ from shutil import copytree, Error
 from os import listdir, rename, walk
 from os.path import expanduser, join, isdir, exists, abspath
 
+from marek import project
+
 
 RULES_FILE = '.rules.py'
 TEMPLATE_PATHS = [
@@ -40,13 +42,9 @@ def load_rules(template_path, project_name, quiet):
     rules_file = join(template_path, RULES_FILE)
     if not exists(rules_file):
         return None
-    import __builtin__
-    __builtin__.project_name = project_name
-    __builtin__.quiet = quiet
-    rules = load_source('rules', rules_file)
-    del(__builtin__.project_name)
-    del(__builtin__.quiet)
-    return rules
+    project.project_name = project_name
+    project.quiet = quiet
+    return load_source('rules', rules_file)
 
 
 def process_clone(clone_path, rules):
