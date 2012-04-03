@@ -83,15 +83,17 @@ def clean_and_exit(clone_path, msg):
 
 def process_template(template_name, project_name, quiet=False):
     """ Tries to clone the template into a project located in the current directory """
-    clone_path = abspath(project_name)
     try:
         assert template_name
         assert project_name
+    except AssertionError:
+        print "Please specify a source template and project name."
+        sys.exit(1)
+    clone_path = abspath(project_name)
+    try:
         template_path = get_available_templates()[template_name]
         copytree(template_path, clone_path)
         process_clone(clone_path, load_rules(template_path, project_name, quiet))
-    except AssertionError:
-        clean_and_exit(clone_path, "Please specify a source template and project name.")
     except KeyError:
         clean_and_exit(clone_path, "Template %s was not found" % template_name)
     except Error, e:
