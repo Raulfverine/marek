@@ -102,11 +102,15 @@ def process_template(template_name, project_name, quiet=False):
         clean_and_exit(clone_path, "\nInterrupted")
 
 
-def show_templates():
+def show_templates(plain=False):
     """ Shows all available templates """
-    print "Avaliable templates:"
-    for template in sorted(get_available_templates().keys()):
-        print template
+    templates = sorted(get_available_templates().keys())
+    if plain:
+        print " ".join(templates)
+    else:
+        print "Avaliable templates:"
+        for template in templates:
+            print template
     sys.exit(0)
 
 
@@ -115,12 +119,15 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('-q', '--quiet', action='store_true', help='Use default values without asking')
     parser.add_argument('-l', '--list', action='store_true', help='Show available templates')
+    parser.add_argument('--list-plain', action='store_true', help='Show available templates as a one line string')
     parser.add_argument('template', nargs='?', default=None)
     parser.add_argument('project_name', nargs='?', default=None)
 
     opts = parser.parse_args()
     if opts.list:
         show_templates()
+    elif opts.list_plain:
+        show_templates(True)
     else:
         process_template(opts.template, opts.project_name, opts.quiet)
 
