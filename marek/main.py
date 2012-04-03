@@ -83,10 +83,10 @@ def clean_and_exit(clone_path, msg):
 
 def process_template(template_name, project_name, quiet=False):
     """ Tries to clone the template into a project located in the current directory """
+    clone_path = abspath(project_name)
     try:
         assert template_name
         assert project_name
-        clone_path = abspath(project_name)
         template_path = get_available_templates()[template_name]
         copytree(template_path, clone_path)
         process_clone(clone_path, load_rules(template_path, project_name, quiet))
