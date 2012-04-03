@@ -8,6 +8,7 @@ from os import listdir, rename, walk
 from os.path import expanduser, join, isdir, exists, abspath
 
 from marek import project
+from marek.input import NoValueError
 
 
 RULES_FILE = '.rules.py'
@@ -42,7 +43,7 @@ def load_rules(template_path, project_name, quiet):
     rules_file = join(template_path, RULES_FILE)
     if not exists(rules_file):
         return None
-    project.project_name = project_name
+    project.name = project_name
     project.quiet = quiet
     return load_source('rules', rules_file)
 
@@ -90,6 +91,9 @@ def process_template(template_name, project_name, quiet=False):
         sys.exit(1)
     except Error, e:
         print "Cloning error: %s" % e
+        sys.exit(1)
+    except NoValueError, e:
+        print "Value is missing and has no default value"
         sys.exit(1)
     except KeyboardInterrupt:
         print >> sys.stderr, "\nInterrupted"
