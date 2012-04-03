@@ -3,7 +3,7 @@
 import sys
 from imp import load_source
 from argparse import ArgumentParser
-from shutil import copytree, Error
+from shutil import copytree, Error, rmtree
 from os import listdir, rename, walk
 from os.path import expanduser, join, isdir, exists, abspath
 
@@ -74,6 +74,13 @@ def process_clone(clone_path, rules):
                 rename(old_name, new_name)
 
 
+def clean_and_exit(clone_path, msg):
+    """ Removes the clone, prints message and exits """
+    print msg
+    rmtree(clone_path)
+    sys.exit(1)
+
+
 def process_template(template_name, project_name, quiet=False):
     """ Tries to clone the template into a project located in the current directory """
     try:
@@ -84,20 +91,15 @@ def process_template(template_name, project_name, quiet=False):
         copytree(template_path, clone_path)
         process_clone(clone_path, load_rules(template_path, project_name, quiet))
     except AssertionError:
-        print "Please specify a source template and project name."
-        sys.exit(1)
+        clean_and_exit(clone_path, "Please specify a source template and project name.")
     except KeyError:
-        print "Template %s was not found" % template_name
-        sys.exit(1)
+        clean_and_exit(clone_path, "Template %s was not found" % template_name)
     except Error, e:
-        print "Cloning error: %s" % e
-        sys.exit(1)
+        clean_and_exit(clone_path, "Cloning error: %s" % e)
     except NoValueError, e:
-        print "Value is missing and has no default value"
-        sys.exit(1)
+        clean_and_exit(clone_path, "Value is missing and has no default value")
     except KeyboardInterrupt:
-        print >> sys.stderr, "\nInterrupted"
-        sys.exit(1)
+        clean_and_exit(clone_path, "\nInterrupted")
 
 
 def show_templates():
