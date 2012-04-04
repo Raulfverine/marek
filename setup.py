@@ -12,7 +12,7 @@ def get_deb_meta():
 
 
 setup(
-    packages = find_packages(),
+    packages = find_packages(exclude=["templates"]),
     entry_points={
         "console_scripts": [
             'marek = marek.main:main'

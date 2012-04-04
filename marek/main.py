@@ -4,7 +4,7 @@ import sys
 from imp import load_source
 from argparse import ArgumentParser
 from shutil import copytree, Error, rmtree
-from os import listdir, rename, walk
+from os import listdir, rename, walk, remove
 from os.path import expanduser, join, isdir, exists, abspath, basename, dirname
 
 from marek import project
@@ -85,6 +85,8 @@ def process_clone(clone_path, rules):
             new_name = render(old_name, data)
             if old_name != new_name:
                 rename(old_name, new_name)
+    # no need to have the rules file
+    remove(join(clone_path, RULES_FILE))
 
 
 def clean_and_exit(clone_path, msg):
