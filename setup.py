@@ -1,13 +1,22 @@
 #!/usr/bin/python
 from setuptools import setup, find_packages
 
-setup (
-    name = "marek",
-    version = open("debian/changelog").read().split()[1][1:-1],
+
+def get_deb_meta():
+    with open("debian/changelog") as chlog:
+        data = chlog.read()
+    return dict(
+        name=data[0],
+        version=data[1][1:-1]
+    )
+
+
+setup(
     packages = find_packages(),
     entry_points={
         "console_scripts": [
             'marek = marek.main:main'
         ]
-    }
+    },
+    **get_deb_meta()
 )
