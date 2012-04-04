@@ -8,7 +8,6 @@ from os import listdir, rename, walk
 from os.path import expanduser, join, isdir, exists, abspath
 
 from marek import project
-from marek.input import NoValueError
 
 
 RULES_FILE = '.rules.py'
@@ -98,8 +97,6 @@ def process_template(template_name, project_name, quiet=False):
         clean_and_exit(clone_path, "Template %s was not found" % template_name)
     except Error, e:
         clean_and_exit(clone_path, "Cloning error: %s" % e)
-    except NoValueError, e:
-        clean_and_exit(clone_path, "Value is missing and has no default value")
     except KeyboardInterrupt:
         clean_and_exit(clone_path, "\nInterrupted")
 
