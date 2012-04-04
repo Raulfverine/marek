@@ -5,7 +5,7 @@ from imp import load_source
 from argparse import ArgumentParser
 from shutil import copytree, Error, rmtree
 from os import listdir, rename, walk
-from os.path import expanduser, join, isdir, exists, abspath
+from os.path import expanduser, join, isdir, exists, abspath, basename, dirname
 
 from marek import project
 
@@ -15,6 +15,20 @@ TEMPLATE_PATHS = [
     "/usr/share/marek",
     expanduser("~/.marek")
 ]
+
+
+def normalize(file_name):
+    """
+    @file_name(string): file name to normalize
+    @returns: absolute file name (starts with /)
+    """
+    if file_name.startswith("~"):
+        file_name = expanduser(file_name)
+    elif file_name.startswith("/"):
+        pass
+    else:
+        file_name =abspath(file_name)
+    return file_name
 
 
 def get_available_templates():
@@ -80,15 +94,20 @@ def clean_and_exit(clone_path, msg):
     sys.exit(1)
 
 
-def process_template(template_name, project_name, quiet=False, force=False):
+def process_template(template_name, clone_path, quiet=False, force=False):
     """ Tries to clone the template into a project located in the current directory """
     try:
         assert template_name
-        assert project_name
+        assert clone_path
     except AssertionError:
-        print "Please specify a source template and project name."
+        print "Please specify a source template and project location."
         sys.exit(1)
-    clone_path = abspath(project_name)
+    clone_path = normalize(clone_path)
+    parent_dir = dirname(clone_path)
+    project_name = basename(clone_path)
+    if not exists(parent_dir):
+        print "Directory %s where project '%s' was supposed to be created does not exist" % (parent_dir, project_name)
+        sys.exit(1)
     try:
         template_path = get_available_templates()[template_name]
         if exists(clone_path):
@@ -96,7 +115,7 @@ def process_template(template_name, project_name, quiet=False, force=False):
                 choice = "null"
                 while choice not in "ynYN":
                     choice = raw_input(
-                        "Directory %s already exists. Do you want to override it (wipes everything)? [y/N]"
+                        "Directory %s already exists. Do you want to override it (wipes everything)? [y/N]" % clone_path
                     )
                 if choice and choice in "yY":
                     force = True
