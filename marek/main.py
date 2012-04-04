@@ -80,7 +80,7 @@ def clean_and_exit(clone_path, msg):
     sys.exit(1)
 
 
-def process_template(template_name, project_name, quiet=False):
+def process_template(template_name, project_name, quiet=False, force=False):
     """ Tries to clone the template into a project located in the current directory """
     try:
         assert template_name
@@ -91,6 +91,21 @@ def process_template(template_name, project_name, quiet=False):
     clone_path = abspath(project_name)
     try:
         template_path = get_available_templates()[template_name]
+        if exists(clone_path):
+            if not force:
+                choice = "null"
+                while choice not in "ynYN":
+                    choice = raw_input(
+                        "Directory %s already exists. Do you want to override it (wipes everything)? [y/N]"
+                    )
+                if choice and choice in "yY":
+                    force = True
+            if force:
+                rmtree(clone_path)
+                print "Directory %s already existed but was overriden." % clone_path
+            else:
+                print "Not overriding..."
+                sys.exit(0)
         copytree(template_path, clone_path)
         process_clone(clone_path, load_rules(template_path, project_name, quiet))
     except KeyError:
@@ -118,6 +133,8 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('-q', '--quiet', action='store_true', help='Use default values without asking')
     parser.add_argument('-l', '--list', action='store_true', help='Show available templates')
+    parser.add_argument('-f', '--force', action='store_true',
+                        help='Override the directory if it already exists (removes it, not merges)')
     parser.add_argument('--list-plain', action='store_true', help='Show available templates as a one line string')
     parser.add_argument('template', nargs='?', default=None)
     parser.add_argument('project_name', nargs='?', default=None)
@@ -128,7 +145,7 @@ def main():
     elif opts.list_plain:
         show_templates(True)
     else:
-        process_template(opts.template, opts.project_name, opts.quiet)
+        process_template(opts.template, opts.project_name, opts.quiet, opts.force)
 
 
 if __name__ == "__main__":
