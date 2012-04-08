@@ -1,3 +1,4 @@
 - Think about project template inheritance to ease customization
 - Think about pure file templates, so that it is not only complicated templates that can be used
 - Think about postclone hooks: init git repo and add all file to the repo, execute git cl
+- Implement better template substitution so that it is easier to open the file in shell
