@@ -8,5 +8,6 @@ data = {
    "python_name": get_input("Python package name", project.name, pythonize),
    "deb_maintainer": get_input("Debian maintainer", os.environ.get("DEBFULLNAME", None)),
    "deb_email": get_input("Debian email", os.environ.get("DEBEMAIL", None)),
-   "deb_description": get_input("Debian description")
+   "deb_description": get_input("Debian description"),
+   "gitignore": ".gitignore"
 }
