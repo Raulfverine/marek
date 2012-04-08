@@ -48,7 +48,9 @@ def get_available_templates():
 def render_string_template(template, data):
     """ Default string template renderer """
     from string import Template
-    return Template(template).safe_substitute(**data)
+    class CustomTpl(Template):
+        delimiter = "%"
+    return CustomTpl(template).safe_substitute(**data)
 
 
 def load_rules(template_path, project_name, quiet):
