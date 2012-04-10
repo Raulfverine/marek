@@ -11,3 +11,11 @@ Architecture: all
 Depends: ${python:Depends},
          ${misc:Depends}
 Description: %{deb_description}
+
+
+Package: %{deb_name}-doc
+Section: doc
+Architecture: all
+Depends: ${misc:Depends},
+         apache2
+Description: %{deb_name} documentation

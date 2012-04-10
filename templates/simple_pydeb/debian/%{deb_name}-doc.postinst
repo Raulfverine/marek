@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -e
+
+# Configure Apache
+
+a2ensite %{deb_name}-doc
+service apache2 restart
+
+#DEBHELPER#

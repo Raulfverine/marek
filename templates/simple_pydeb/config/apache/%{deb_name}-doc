@@ -1,0 +1,6 @@
+# Serve static files
+Alias /docs/%{deb_name}    /usr/share/docs/%{deb_name}
+<Directory /usr/share/docs/%{deb_name}>
+    Order deny,allow
+    Allow from all
+</Directory>

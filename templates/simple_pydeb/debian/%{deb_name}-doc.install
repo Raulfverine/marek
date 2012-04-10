@@ -1,0 +1,2 @@
+docs/.build/html/*                 /usr/share/docs/%{deb_name}
+src/config/apache/%{deb_name}-doc  /etc/apache2/sites-available/
