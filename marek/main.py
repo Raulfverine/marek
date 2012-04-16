@@ -38,6 +38,8 @@ def get_available_templates():
         if not (tdir and exists(tdir)):
             continue
         for template in listdir(tdir):
+            if template.startswith("."):
+                continue
             template_dir = join(tdir.rstrip("/"), template)
             if not isdir(template_dir):
                 continue
