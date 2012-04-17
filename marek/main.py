@@ -12,8 +12,8 @@ from marek import project
 
 RULES_FILE = '.rules.py'
 TEMPLATE_PATHS = [
-    "/usr/share/marek",
-    expanduser("~/.marek")
+    expanduser("~/.marek"),
+    "/usr/share/marek"
 ]
 
 
