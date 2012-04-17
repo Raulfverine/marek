@@ -82,13 +82,13 @@ def process_clone(clone_path, rules):
         # process files
         for tfile in files:
             old_name = join(path, tfile)
-            with open(old_name, "r+") as f:
+            with open(old_name) as f:
                 info = render(f.read(), data)
-                f.seek(0)
-                f.write(info)
             new_name = render(old_name, data)
             if old_name != new_name:
                 rename(old_name, new_name)
+            with open(new_name, "w") as f:
+                f.write(info)
     # no need to have the rules file
     remove(join(clone_path, RULES_FILE))
 
