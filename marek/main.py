@@ -91,6 +91,15 @@ def process_clone(clone_path, rules):
                 f.write(info)
     # no need to have the rules file
     remove(join(clone_path, RULES_FILE))
+    # if it the rules say that only one file in the directory is important - skip everything else
+    file_name = getattr(rules, "file_name", None)
+    if file_name:
+        file_path = os.path.join(clone_path, file_name)
+        if os.path.exists(file_path):
+            parent_dir = os.path.dirname(clone_path)
+            new_name = os.path.join(parent_dir, file_name)
+            rename(file_path, new_name)
+            remove(clone_path)
 
 
 def clean_and_exit(clone_path, msg):
