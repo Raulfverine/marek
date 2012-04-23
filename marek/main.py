@@ -125,6 +125,11 @@ def clean_and_exit(clone_path, msg):
     sys.exit(1)
 
 
+def copy_directory(source, dest):
+    # TODO: implement function that handles duplicates in a smart way
+    copytree(source, dest)
+
+
 def process_template(template_name, clone_path, quiet=False, force=False):
     """ Tries to clone the template into a project located in the current directory """
     try:
@@ -156,8 +161,10 @@ def process_template(template_name, clone_path, quiet=False, force=False):
             else:
                 print "Not overriding..."
                 sys.exit(0)
-        copytree(template_path, clone_path)
-        process_clone(clone_path, load_rules(template_path, project_name, quiet))
+        rules = load_rules(template_path, project_name, quiet)
+        # TODO: deal with parent templates
+        copy_directory(template_path, clone_path)
+        process_clone(clone_path, rules)
     except KeyError:
         clean_and_exit(clone_path, "Template %s was not found" % template_name)
     except Error, err:
