@@ -13,6 +13,7 @@ from marek import project
 
 
 RULES_FILE = '.rules.py'
+PARENT_TPL_FILE = '.parent_tpl.py'
 TEMPLATE_PATHS = [
     expanduser("~/.marek"),
     "/usr/share/marek"
@@ -137,6 +138,15 @@ def copy_directory(source, dest):
     shutil.os.makedirs = makedirs_ignore
     shutil.copytree(source, dest)
     shutil.os.makedirs = makedirs
+
+
+def get_parent_tpl_path(template_path):
+    """ Loads parent template from the PARENT_TPL_FILE """
+    tpl_file = join(template_path, PARENT_TPL_FILE)
+    if not exists(rules_file):
+        return None
+    with open(tpl_file) as f:
+        pass
 
 
 def process_template(template_name, clone_path, quiet=False, force=False):
