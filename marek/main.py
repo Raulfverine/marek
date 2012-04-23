@@ -2,10 +2,11 @@
 
 import sys
 import subprocess
+import shutil
 from imp import load_source
 from argparse import ArgumentParser
-from shutil import copytree, Error, rmtree
-from os import listdir, rename, walk, remove
+from shutil import Error, rmtree
+from os import listdir, rename, walk, remove, makedirs
 from os.path import expanduser, join, isdir, exists, abspath, basename, dirname
 
 from marek import project
@@ -75,6 +76,8 @@ def load_rules(template_path, project_name, quiet):
 def process_clone(clone_path, rules):
     """ Deals with cloned template """
     # pylint: disable=R0914
+    # no need to have the rules file
+    remove(join(clone_path, RULES_FILE))
     # init string processing function and template dict
     render = getattr(rules, "render", render_string_template)
     data = getattr(rules, "data", {})
@@ -97,8 +100,6 @@ def process_clone(clone_path, rules):
                 rename(old_name, new_name)
             with open(new_name, "w") as fil:
                 fil.write(info)
-    # no need to have the rules file
-    remove(join(clone_path, RULES_FILE))
     # if it the rules say that only one file in the directory is important - skip everything else
     file_name = getattr(rules, "file_name", None)
     if file_name:
@@ -126,8 +127,16 @@ def clean_and_exit(clone_path, msg):
 
 
 def copy_directory(source, dest):
-    # TODO: implement function that handles duplicates in a smart way
-    copytree(source, dest)
+    """ Copies the directory, ignores if it already exists """
+
+    def makedirs_ignore(dst):
+        """ Hackish way to ignore existing dirs """
+        if not exists(dst):
+            makedirs(dst)
+
+    shutil.os.makedirs = makedirs_ignore
+    shutil.copytree(source, dest)
+    shutil.os.makedirs = makedirs
 
 
 def process_template(template_name, clone_path, quiet=False, force=False):
