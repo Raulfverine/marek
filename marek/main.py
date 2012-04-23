@@ -114,7 +114,7 @@ def process_clone(clone_path, rules):
         script_path = join(clone_path, script)
         if not exists(script_path):
             raise CloneError("Script with name %s was not found in the clone" % file_name)
-        subprocess.call(". %s" % script_path)
+        subprocess.check_call("cd %s; . %s" % (clone_path, script_path), shell=True)
         remove(script_path)
 
 
