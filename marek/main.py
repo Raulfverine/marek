@@ -1,6 +1,7 @@
 """ Marek: tool for creating various projects from templates. """
 
 import sys
+import subprocess
 from imp import load_source
 from argparse import ArgumentParser
 from shutil import copytree, Error, rmtree
@@ -15,6 +16,10 @@ TEMPLATE_PATHS = [
     expanduser("~/.marek"),
     "/usr/share/marek"
 ]
+
+
+class CloneError(Exception):
+    pass
 
 
 def normalize(file_name):
@@ -95,11 +100,19 @@ def process_clone(clone_path, rules):
     file_name = getattr(rules, "file_name", None)
     if file_name:
         file_path = join(clone_path, file_name)
-        if exists(file_path):
-            parent_dir = dirname(clone_path)
-            new_name = join(parent_dir, file_name)
-            rename(file_path, new_name)
-            rmtree(clone_path)
+        if not exists(file_path):
+            raise CloneError("File with name %s was not found in the clone" % file_name)
+        parent_dir = dirname(clone_path)
+        new_name = join(parent_dir, file_name)
+        rename(file_path, new_name)
+        rmtree(clone_path)
+    # process postclone files
+    for script in list(getattr(rules, "postclone_scripts", [])):
+        script_path = join(clone_path, script)
+        if not exists(script_path):
+            raise CloneError("Script with name %s was not found in the clone" % file_name)
+        subprocess.call(". %s" % script_path)
+        remove(script_path)
 
 
 def clean_and_exit(clone_path, msg):
