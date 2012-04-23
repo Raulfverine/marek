@@ -5,7 +5,7 @@ import subprocess
 from imp import load_source
 from argparse import ArgumentParser
 from shutil import copytree, Error, rmtree
-from os import listdir, rename, walk, remove, removedirs
+from os import listdir, rename, walk, remove
 from os.path import expanduser, join, isdir, exists, abspath, basename, dirname
 
 from marek import project
@@ -19,6 +19,7 @@ TEMPLATE_PATHS = [
 
 
 class CloneError(Exception):
+    """ Error for cloning issues """
     pass
 
 
@@ -32,7 +33,7 @@ def normalize(file_name):
     elif file_name.startswith("/"):
         pass
     else:
-        file_name =abspath(file_name)
+        file_name = abspath(file_name)
     return file_name
 
 
@@ -54,6 +55,7 @@ def get_available_templates():
 
 def render_string_template(template, data):
     """ Default string template renderer """
+    # pylint: disable=W0402, W0404, C0111, W0142
     from string import Template
     class CustomTpl(Template):
         delimiter = "%"
@@ -72,6 +74,7 @@ def load_rules(template_path, project_name, quiet):
 
 def process_clone(clone_path, rules):
     """ Deals with cloned template """
+    # pylint: disable=R0914
     # init string processing function and template dict
     render = getattr(rules, "render", render_string_template)
     data = getattr(rules, "data", {})
@@ -87,13 +90,13 @@ def process_clone(clone_path, rules):
         # process files
         for tfile in files:
             old_name = join(path, tfile)
-            with open(old_name) as f:
-                info = render(f.read(), data)
+            with open(old_name) as fil:
+                info = render(fil.read(), data)
             new_name = render(old_name, data)
             if old_name != new_name:
                 rename(old_name, new_name)
-            with open(new_name, "w") as f:
-                f.write(info)
+            with open(new_name, "w") as fil:
+                fil.write(info)
     # no need to have the rules file
     remove(join(clone_path, RULES_FILE))
     # if it the rules say that only one file in the directory is important - skip everything else
@@ -157,8 +160,8 @@ def process_template(template_name, clone_path, quiet=False, force=False):
         process_clone(clone_path, load_rules(template_path, project_name, quiet))
     except KeyError:
         clean_and_exit(clone_path, "Template %s was not found" % template_name)
-    except Error, e:
-        clean_and_exit(clone_path, "Cloning error: %s" % e)
+    except Error, err:
+        clean_and_exit(clone_path, "Cloning error: %s" % err)
     except KeyboardInterrupt:
         clean_and_exit(clone_path, "\nInterrupted")
 
