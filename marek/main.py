@@ -3,6 +3,7 @@
 import sys
 import subprocess
 import shutil
+import re
 from imp import load_source
 from argparse import ArgumentParser
 from shutil import Error, rmtree
@@ -140,13 +141,17 @@ def copy_directory(source, dest):
     shutil.os.makedirs = makedirs
 
 
-def get_parent_tpl_path(template_path):
-    """ Loads parent template from the PARENT_TPL_FILE """
-    tpl_file = join(template_path, PARENT_TPL_FILE)
-    if not exists(rules_file):
-        return None
-    with open(tpl_file) as f:
-        pass
+def process_tpl_chain(tpl_name, dest):
+    """ Copies a chain of parent -> child templates """
+    if tpl_name not in get_available_templates():
+        raise CloneError("Parent template %s was not found" % tpl_name)
+    tpl_path = get_available_templates()[tpl_name]
+    tpl_file = join(tpl_path, PARENT_TPL_FILE)
+    if exists(tpl_file):
+        with open(tpl_file) as fil:
+            tpl_name = re.sub(r'[^\w-]', '', fil.read())
+            process_tpl_chain(tpl_name, dest)
+    copy_directory(tpl_path, dest)
 
 
 def process_template(template_name, clone_path, quiet=False, force=False):
@@ -181,8 +186,7 @@ def process_template(template_name, clone_path, quiet=False, force=False):
                 print "Not overriding..."
                 sys.exit(0)
         rules = load_rules(template_path, project_name, quiet)
-        # TODO: deal with parent templates
-        copy_directory(template_path, clone_path)
+        process_tpl_chain(template_name, clone_path)
         process_clone(clone_path, rules)
     except KeyError:
         clean_and_exit(clone_path, "Template %s was not found" % template_name)
