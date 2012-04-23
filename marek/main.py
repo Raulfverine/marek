@@ -13,8 +13,8 @@ from os.path import expanduser, join, isdir, exists, abspath, basename, dirname
 from marek import project
 
 
-RULES_FILE = '.rules.py'
-PARENT_TPL_FILE = '.parent_tpl.py'
+RULES_FILE = 'rules.py'
+PARENT_TPL_FILE = 'parent_tpl'
 TEMPLATE_PATHS = [
     expanduser("~/.marek"),
     "/usr/share/marek"
