@@ -78,8 +78,9 @@ def load_rules(template_path, project_name, quiet):
 def process_clone(clone_path, rules):
     """ Deals with cloned template """
     # pylint: disable=R0914
-    # no need to have the rules file
+    # no need to have the rules file and the parent_tpl file
     remove(join(clone_path, RULES_FILE))
+    remove(join(clone_path, PARENT_TPL_FILE))
     # init string processing function and template dict
     render = getattr(rules, "render", render_string_template)
     data = getattr(rules, "data", {})
