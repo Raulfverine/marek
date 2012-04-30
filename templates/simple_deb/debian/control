@@ -11,3 +11,5 @@ Architecture: all
 Depends: ${python:Depends},
          ${misc:Depends}
 Description: %{deb_description}
+
+{[EXTRA]}
