@@ -2,17 +2,17 @@
 
 import sys
 import subprocess
-import shutil
 import re
 from imp import load_source
 from argparse import ArgumentParser
 from shutil import Error, rmtree
-from os import listdir, rename, walk, remove, makedirs
-from os.path import expanduser, join, isdir, exists, abspath, basename, dirname
+from os import listdir, rename, walk, remove, makedirs, readlink, symlink
+from os.path import expanduser, join, isdir, exists, abspath, basename, dirname, islink
 
 from marek import project
 
 
+EXTRA_STRING = "{[EXTRA]}"
 RULES_FILE = 'rules.py'
 PARENT_TPL_FILE = 'parent_tpl'
 TEMPLATE_PATHS = [
@@ -129,17 +129,44 @@ def clean_and_exit(clone_path, msg):
     sys.exit(1)
 
 
+def process_file(src_file, dest_file):
+    """
+    Copies content of the src_file into dest_file. If dest_file was taken from the parent template and
+    there is an {[EXTRA]} key, the key is replaced with content of src_file. Otherwise dest_file content
+    is fully overriten.
+    """
+    with open(src_file) as fil:
+        new_data = fil.read()
+    if exists(dest_file):
+        with open(dest_file) as fil:
+            old_data = fil.read()
+        # replace if exists
+        if EXTRA_STRING in old_data:
+            new_data = old_data.replace(EXTRA_STRING, new_data)
+    with open(dest_file, "w") as fil:
+        fil.write(new_data)
+
+
 def copy_directory(source, dest):
     """ Copies the directory, ignores if it already exists """
-
-    def makedirs_ignore(dst):
-        """ Hackish way to ignore existing dirs """
-        if not exists(dst):
-            makedirs(dst)
-
-    shutil.os.makedirs = makedirs_ignore
-    shutil.copytree(source, dest)
-    shutil.os.makedirs = makedirs
+    for path, dirs, files in walk(source):
+        relative_src_path = path.replace(source, "").lstrip("/")
+        abs_dest_path = join(dest, relative_src_path)
+        if not exists(abs_dest_path):
+            makedirs(abs_dest_path)
+        for tdir in dirs:
+            dest_dir = join(abs_dest_path, tdir)
+            if not exists(dest_dir):
+                makedirs(dest_dir)
+        for tfile in files:
+            src_file = join(path, tfile)
+            dest_file = join(abs_dest_path, tfile)
+            if islink(src_file):
+                linkto = readlink(src_file)
+                symlink(linkto, dest_file)
+                continue
+            else:
+                process_file(src_file, dest_file)
 
 
 def process_tpl_chain(tpl_name, dest):
