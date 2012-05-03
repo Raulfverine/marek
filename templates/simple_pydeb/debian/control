@@ -1,5 +1,5 @@
-Package: %{deb_name}-doc
+Package: {{deb_name}}-doc
 Section: doc
 Architecture: all
 Depends: ${misc:Depends}
-Description: %{deb_name} documentation
+Description: {{deb_name}} documentation

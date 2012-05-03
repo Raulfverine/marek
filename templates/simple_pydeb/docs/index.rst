@@ -1,4 +1,4 @@
-%{python_name} documentation
+{{python_name}} documentation
 ============================
 
 cheat sheet : http://docutils.sourceforge.net/docs/user/rst/quickref.html
