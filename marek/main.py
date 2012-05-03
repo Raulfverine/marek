@@ -9,11 +9,11 @@ from shutil import Error, rmtree
 from os import listdir, rename, walk, remove, makedirs, readlink, symlink
 from os.path import expanduser, join, isdir, exists, abspath, basename, dirname, islink
 
+from jinja2 import Template
+
 from marek import project
 
 
-EXTRA_STRING = "{[EXTRA]}"
-OVERRIDE_FLAG = "{[OVERRIDE]}"
 RULES_FILE = 'rules.py'
 PARENT_TPL_FILE = 'parent_tpl'
 TEMPLATE_PATHS = [
@@ -60,10 +60,7 @@ def get_available_templates():
 def render_string_template(template, data):
     """ Default string template renderer """
     # pylint: disable=W0402, W0404, C0111, W0142
-    from string import Template
-    class CustomTpl(Template):
-        delimiter = "%"
-    return CustomTpl(template).safe_substitute(**data)
+    return Template(template).render(**data)
 
 
 def load_rules(template_path, project_name, quiet):
@@ -99,8 +96,6 @@ def process_clone(clone_path, rules):
             old_name = join(path, tfile)
             with open(old_name) as fil:
                 info = render(fil.read(), data)
-                info.replace(OVERRIDE_FLAG, "")
-                info.replace(EXTRA_STRING, "")
             new_name = render(old_name, data)
             if old_name != new_name:
                 rename(old_name, new_name)
@@ -138,15 +133,25 @@ def process_file(src_file, dest_file):
     there is an {[EXTRA]} key, the key is replaced with content of src_file. Otherwise dest_file content
     is fully overriten.
     """
+    # read data
     with open(src_file) as fil:
         new_data = fil.read()
-    if exists(dest_file) and OVERRIDE_FLAG not in new_data:
-        with open(dest_file) as fil:
-            old_data = fil.read()
-        # replace if exists
-        if EXTRA_STRING in old_data:
-            new_data = old_data.replace(EXTRA_STRING, new_data)
+    # generate a chain of templates
+    parent_template = None
+    current_template = dest_file
+    cursor = 1
+    while exists(current_template):
+        parent_template = current_template
+        current_template = "%s-child-%d" % (dest_file, cursor)
+        cursor += 1
+    # write data
     with open(dest_file, "w") as fil:
+        if parent_template:
+            # in the chain of templates each has to extend one another
+            new_data = "\n".join([
+                "{%% extends '%s' %%}" % parent_template,
+                new_data
+            ])
         fil.write(new_data)
 
 
