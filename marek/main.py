@@ -14,6 +14,7 @@ from jinja2 import Template
 from marek import project
 
 
+CHILD_TPL_FLAG = "marek-apprentice"
 OVERRIDE_FLAG = "{[OVERRIDE]}"
 RULES_FILE = 'rules.py'
 PARENT_TPL_FILE = 'parent_tpl'
@@ -146,7 +147,7 @@ def process_file(src_file, dest_file):
     else:
         while exists(current_template):
             parent_template = current_template
-            current_template = "%s-child-%d" % (dest_file, cursor)
+            current_template = "%s%s%d" % (dest_file, CHILD_TPL_FLAG, cursor)
             cursor += 1
     # write data
     with open(dest_file, "w") as fil:
