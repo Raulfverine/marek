@@ -143,7 +143,7 @@ def process_file(src_file, dest_file):
     current_template = dest_file
     cursor = 1
     if OVERRIDE_FLAG in new_data:
-        new_data = new_data.replace(OVERRIDE_FLAG, ""}
+        new_data = new_data.replace(OVERRIDE_FLAG, "")
     else:
         while exists(current_template):
             parent_template = current_template
