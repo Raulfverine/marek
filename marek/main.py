@@ -13,6 +13,7 @@ from marek import project
 
 
 EXTRA_STRING = "{[EXTRA]}"
+OVERRIDE_FLAG = "{[OVERRIDE]}"
 RULES_FILE = 'rules.py'
 PARENT_TPL_FILE = 'parent_tpl'
 TEMPLATE_PATHS = [
@@ -98,6 +99,8 @@ def process_clone(clone_path, rules):
             old_name = join(path, tfile)
             with open(old_name) as fil:
                 info = render(fil.read(), data)
+                info.replace(OVERRIDE_FLAG, "")
+                info.replace(EXTRA_STRING, "")
             new_name = render(old_name, data)
             if old_name != new_name:
                 rename(old_name, new_name)
@@ -137,7 +140,7 @@ def process_file(src_file, dest_file):
     """
     with open(src_file) as fil:
         new_data = fil.read()
-    if exists(dest_file):
+    if exists(dest_file) and OVERRIDE_FLAG not in new_data:
         with open(dest_file) as fil:
             old_data = fil.read()
         # replace if exists
