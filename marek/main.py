@@ -14,6 +14,7 @@ from jinja2 import Template
 from marek import project
 
 
+OVERRIDE_FLAG = "{[OVERRIDE]}"
 RULES_FILE = 'rules.py'
 PARENT_TPL_FILE = 'parent_tpl'
 TEMPLATE_PATHS = [
@@ -140,10 +141,13 @@ def process_file(src_file, dest_file):
     parent_template = None
     current_template = dest_file
     cursor = 1
-    while exists(current_template):
-        parent_template = current_template
-        current_template = "%s-child-%d" % (dest_file, cursor)
-        cursor += 1
+    if OVERRIDE_FLAG in new_data:
+        new_data = new_data.replace(OVERRIDE_FLAG, ""}
+    else:
+        while exists(current_template):
+            parent_template = current_template
+            current_template = "%s-child-%d" % (dest_file, cursor)
+            cursor += 1
     # write data
     with open(dest_file, "w") as fil:
         if parent_template:
