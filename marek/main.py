@@ -22,11 +22,23 @@ TEMPLATE_PATHS = [
     expanduser("~/.marek"),
     "/usr/share/marek"
 ]
+IGNORE_PATTERNS = [
+    "^.*\.pyc$" # all .pyc files
+]
 
 
 class CloneError(Exception):
     """ Error for cloning issues """
     pass
+
+
+def remove_if_ignored(file_name):
+    """ Removes file from the clone (not folder) if it is ignored """
+    for pattern in IGNORE_PATTERNS:
+        if re.match(pattern, file_name):
+            remove(file_name)
+            return True
+    return False
 
 
 def normalize(file_name):
@@ -96,6 +108,8 @@ def process_clone(clone_path, rules):
         # process files
         for tfile in files:
             old_name = join(path, tfile)
+            if remove_if_ignored(old_name):
+                continue
             with open(old_name) as fil:
                 info = render(fil.read(), data)
             new_name = render(old_name, data)
