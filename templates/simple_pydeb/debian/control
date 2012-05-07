@@ -1,5 +1,9 @@
+{% block extra %}
 Package: {{deb_name}}-doc
 Section: doc
 Architecture: all
 Depends: ${misc:Depends}
 Description: {{deb_name}} documentation
+{% endblock %}
+
+{[EXTEND]}
