@@ -74,12 +74,6 @@ def get_available_templates():
     return dirs
 
 
-def render_string_template(template, data):
-    """ Default string template renderer """
-    # pylint: disable=W0402, W0404, C0111, W0142
-    return Template(template).render(**data)
-
-
 def load_rules(template_path, project_name, quiet):
     """ Loads rules from the RULES_FILE """
     rules_file = join(template_path, RULES_FILE)
@@ -90,50 +84,39 @@ def load_rules(template_path, project_name, quiet):
     return load_source('rules', rules_file)
 
 
-def get_far_child(name):
-    """
-    Among files: a1, a2, a3, a5, a4 - a5 id the far child
-    """
-    base_name = name.split(CHILD_TPL_FLAG)[0]
-    base_dir = dirname(name)
+def process_cloned_file(old_name, data):
+    """ Far child becomes the base file, and all children are removed """
+    # Decide what is a far_child
+    base_name = old_name.split(CHILD_TPL_FLAG)[0]
+    base_dir = dirname(old_name)
     cache = []
     for tfile in listdir(base_dir):
         tfile = join(base_dir, tfile)
         if isfile(tfile) and tfile.startswith(base_name):
             cache.append(tfile)
     far_child = sorted(cache)[-1]
-    return cache, base_name, far_child
-
-
-def is_far_child(name):
-    """ Checks if the name is the one of the far child """
-    _, _, far_child = get_far_child(name)
-    return name == far_child
-
-
-def process_far_child(old_name, data):
-    """ Far child becomes the base file, and all children are removed """
+    # Actual rendering
     jinja_env = Environment(loader=FileSystemLoader("/"))
     info = jinja_env.get_template(old_name).render(data)
-    cache, base_name, far_child = get_far_child(old_name)
+    if far_child != old_name:
+        return False
     for tfile in cache:
         remove(tfile)
-    new_name = render_string_template(base_name, data)
+    new_name = Template(base_name).render(data)
     with open(new_name, "w") as fil:
         fil.write(info)
+    return True
 
 
 def process_clone(clone_path, rules):
     """ Deals with cloned template """
     # pylint: disable=R0914
-    # init string processing function and template dict
-    render = render_string_template
     data = getattr(rules, "data", {})
     # process files and dirs
     for path, dirs, files in walk(clone_path):
         # process dirs
         for tdir in list(dirs):
-            ndir = render(tdir, data)
+            ndir = Template(tdir).render(data)
             if tdir != ndir:
                 rename(join(path, tdir), join(path, ndir))
                 dirs.remove(tdir)
@@ -143,9 +126,7 @@ def process_clone(clone_path, rules):
             old_name = join(path, tfile)
             if remove_if_ignored(old_name):
                 continue
-            if not is_far_child(old_name):
-                continue
-            process_far_child(old_name, data)
+            process_cloned_file(old_name, data)
     # if it the rules say that only one file in the directory is important - skip everything else
     file_name = getattr(rules, "file_name", None)
     if file_name:
