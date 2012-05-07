@@ -208,15 +208,54 @@ def copy_directory(source, dest):
 
 def process_tpl_chain(tpl_name, dest):
     """ Copies a chain of parent -> child templates """
-    if tpl_name not in get_available_templates():
+    tpls = get_available_templates()
+    if tpl_name not in tpls:
         raise CloneError("Parent template %s was not found" % tpl_name)
-    tpl_path = get_available_templates()[tpl_name]
+    tpl_path = tpls[tpl_name]
     tpl_file = join(tpl_path, PARENT_TPL_FILE)
     if exists(tpl_file):
         with open(tpl_file) as fil:
             tpl_name = re.sub(r'[^\w-]', '', fil.read())
             process_tpl_chain(tpl_name, dest)
     copy_directory(tpl_path, dest)
+
+
+class MergedRules(object): # pylint: disable=R0903
+    """ Placeholder class for rules from a chain of templates """
+    file_name = None
+    data = {}
+    postclone_scripts = []
+
+
+def load_chain_rules(tpl_name, project_name, quiet):
+    """ Loads and merges projects rules from a chain of templates """
+    tpls = get_available_templates()
+    if tpl_name not in tpls:
+        raise CloneError("Parent template %s was not found" % tpl_name)
+    tpl_path = tpls[tpl_name]
+    tpl_file = join(tpl_path, PARENT_TPL_FILE)
+    parent_rules = None
+    if exists(tpl_file):
+        with open(tpl_file) as fil:
+            tpl_name = re.sub(r'[^\w-]', '', fil.read())
+            parent_rules = load_chain_rules(tpl_name, project_name, quiet)
+    rules = load_rules(tpl_file, project_name, quiet)
+    if not getattr(rules, "extend", False):
+        return rules
+    ## merge_rules
+    # rules
+    merged_rules = MergedRules()
+    parent_data = getattr(parent_rules, "data", {})
+    data = getattr(rules, "data", {})
+    parent_data.update(data)
+    merged_rules.data = parent_data
+    # file_name
+    merged_rules.file_name = getattr(rules, "file_name", None) or getattr(parent_rules, "file_name", None)
+    # postclone scripts
+    parent_scripts = list(getattr(rules, "postclone_scripts", []))
+    scripts = list(getattr(parent_rules, "postclone_scripts", []))
+    merged_rules.postclone_scripts = list(set(parent_scripts + scripts))
+    return merged_rules
 
 
 def process_template(template_name, clone_path, quiet=False, force=False):
@@ -234,7 +273,6 @@ def process_template(template_name, clone_path, quiet=False, force=False):
         print "Directory %s where project '%s' was supposed to be created does not exist" % (parent_dir, project_name)
         sys.exit(1)
     try:
-        template_path = get_available_templates()[template_name]
         if exists(clone_path):
             if not force:
                 choice = "null"
@@ -250,7 +288,7 @@ def process_template(template_name, clone_path, quiet=False, force=False):
             else:
                 print "Not overriding..."
                 sys.exit(0)
-        rules = load_rules(template_path, project_name, quiet)
+        rules = load_chain_rules(template_name, project_name, quiet)
         process_tpl_chain(template_name, clone_path)
         process_clone(clone_path, rules)
     except KeyError:
