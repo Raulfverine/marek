@@ -9,7 +9,7 @@ from shutil import Error, rmtree
 from os import listdir, rename, walk, remove, makedirs, readlink, symlink
 from os.path import expanduser, join, isdir, exists, abspath, basename, dirname, islink
 
-from jinja2 import Template
+from jinja2 import Template, FileSystemLoader, Environment
 
 from marek import project
 
@@ -93,8 +93,9 @@ def process_clone(clone_path, rules):
     # no need to have the rules file and the parent_tpl file
     remove(join(clone_path, RULES_FILE))
     remove(join(clone_path, PARENT_TPL_FILE))
+    jinja_env = Environment(loader=FileSystemLoader("/"))
     # init string processing function and template dict
-    render = getattr(rules, "render", render_string_template)
+    render = render_string_template
     data = getattr(rules, "data", {})
     # process files and dirs
     for path, dirs, files in walk(clone_path):
@@ -110,8 +111,9 @@ def process_clone(clone_path, rules):
             old_name = join(path, tfile)
             if remove_if_ignored(old_name):
                 continue
-            with open(old_name) as fil:
-                info = render(fil.read(), data)
+            info = jinja_env.get_template(old_name).render(data)
+            #with open(old_name) as fil:
+            #    info = render(fil.read(), data)
             new_name = render(old_name, data)
             if old_name != new_name:
                 rename(old_name, new_name)
@@ -139,7 +141,8 @@ def process_clone(clone_path, rules):
 def clean_and_exit(clone_path, msg):
     """ Removes the clone, prints message and exits """
     print msg
-    rmtree(clone_path)
+    if exists(clone_path):
+        rmtree(clone_path)
     sys.exit(1)
 
 
