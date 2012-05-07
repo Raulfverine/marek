@@ -7,7 +7,7 @@ from imp import load_source
 from argparse import ArgumentParser
 from shutil import Error, rmtree
 from os import listdir, rename, walk, remove, makedirs, readlink, symlink
-from os.path import expanduser, join, isdir, exists, abspath, basename, dirname, islink
+from os.path import expanduser, join, isdir, exists, abspath, basename, dirname, islink, isfile
 
 from jinja2 import Template, FileSystemLoader, Environment
 
@@ -90,6 +90,21 @@ def load_rules(template_path, project_name, quiet):
     return load_source('rules', rules_file)
 
 
+def is_far_child(name):
+    """
+    Among files: a1, a2, a3, a5, a4 - a5 id the far child
+    """
+    base_name = name.split(CHILD_TPL_FLAG)[0]
+    base_dir = dirname(name)
+    cache = []
+    for tfile in listdir(base_dir):
+        tfile = join(base_dir, tfile)
+        if isfile(tfile) and tfile.startswith(base_name):
+            cache.append(tfile)
+    far_child = sorted(cache)[-1]
+    return name == far_child
+
+
 def process_clone(clone_path, rules):
     """ Deals with cloned template """
     # pylint: disable=R0914
@@ -111,6 +126,8 @@ def process_clone(clone_path, rules):
         for tfile in files:
             old_name = join(path, tfile)
             if remove_if_ignored(old_name):
+                continue
+            if not is_far_child(old_name):
                 continue
             try:
                 info = jinja_env.get_template(old_name).render(data)
@@ -177,7 +194,7 @@ def process_file(src_file, dest_file):
         if parent_template:
             # in the chain of templates each has to extend one another
             new_data = "\n".join([
-                "{%% extends '%s' %%}" % parent_template,
+                "{%% extends \"%s\" %%}" % parent_template,
                 new_data
             ])
         fil.write(new_data)
