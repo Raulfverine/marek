@@ -90,7 +90,7 @@ def load_rules(template_path, project_name, quiet):
     return load_source('rules', rules_file)
 
 
-def is_far_child(name):
+def get_far_child(name):
     """
     Among files: a1, a2, a3, a5, a4 - a5 id the far child
     """
@@ -102,14 +102,30 @@ def is_far_child(name):
         if isfile(tfile) and tfile.startswith(base_name):
             cache.append(tfile)
     far_child = sorted(cache)[-1]
+    return cache, base_name, far_child
+
+
+def is_far_child(name):
+    """ Checks if the name is the one of the far child """
+    _, _, far_child = get_far_child(name)
     return name == far_child
+
+
+def process_far_child(old_name, data):
+    """ Far child becomes the base file, and all children are removed """
+    jinja_env = Environment(loader=FileSystemLoader("/"))
+    info = jinja_env.get_template(old_name).render(data)
+    cache, base_name, far_child = get_far_child(old_name)
+    for tfile in cache:
+        remove(tfile)
+    new_name = render_string_template(base_name, data)
+    with open(new_name, "w") as fil:
+        fil.write(info)
 
 
 def process_clone(clone_path, rules):
     """ Deals with cloned template """
     # pylint: disable=R0914
-    # no need to have the rules file and the parent_tpl file
-    jinja_env = Environment(loader=FileSystemLoader("/"))
     # init string processing function and template dict
     render = render_string_template
     data = getattr(rules, "data", {})
@@ -129,20 +145,7 @@ def process_clone(clone_path, rules):
                 continue
             if not is_far_child(old_name):
                 continue
-            try:
-                info = jinja_env.get_template(old_name).render(data)
-            except:
-                print "Template rendering issue"
-                print "File name"
-                print old_name
-                print "File content"
-                with open(old_name) as fil:
-                    print fil.read()
-            new_name = render(old_name, data)
-            if old_name != new_name:
-                rename(old_name, new_name)
-            with open(new_name, "w") as fil:
-                fil.write(info)
+            process_far_child(old_name, data)
     # if it the rules say that only one file in the directory is important - skip everything else
     file_name = getattr(rules, "file_name", None)
     if file_name:
