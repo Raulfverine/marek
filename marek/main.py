@@ -15,7 +15,7 @@ from marek import project
 
 
 CHILD_TPL_FLAG = "marek-apprentice"
-OVERRIDE_FLAG = "{[OVERRIDE]}"
+EXTEND_FLAG = "{[EXTEND]}"
 RULES_FILE = 'rules.py'
 PARENT_TPL_FILE = 'parent_tpl'
 TEMPLATE_PATHS = [
@@ -115,8 +115,12 @@ def process_clone(clone_path, rules):
             try:
                 info = jinja_env.get_template(old_name).render(data)
             except:
+                print "Template rendering issue"
+                print "File name"
                 print old_name
-                print open(old_name).read()
+                print "File content"
+                with open(old_name) as fil:
+                    print fil.read()
             new_name = render(old_name, data)
             if old_name != new_name:
                 rename(old_name, new_name)
@@ -162,9 +166,8 @@ def process_file(src_file, dest_file):
     parent_template = None
     current_template = dest_file
     cursor = 1
-    if OVERRIDE_FLAG in new_data:
-        new_data = new_data.replace(OVERRIDE_FLAG, "")
-    else:
+    if EXTEND_FLAG in new_data:
+        new_data = new_data.replace(EXTEND_FLAG, "")
         while exists(current_template):
             parent_template = current_template
             current_template = "%s%s%d" % (dest_file, CHILD_TPL_FLAG, cursor)
