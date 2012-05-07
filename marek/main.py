@@ -239,7 +239,7 @@ def load_chain_rules(tpl_name, project_name, quiet):
         with open(tpl_file) as fil:
             tpl_name = re.sub(r'[^\w-]', '', fil.read())
             parent_rules = load_chain_rules(tpl_name, project_name, quiet)
-    rules = load_rules(tpl_file, project_name, quiet)
+    rules = load_rules(tpl_path, project_name, quiet)
     if not getattr(rules, "extend", False):
         return rules
     ## merge_rules
