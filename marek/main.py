@@ -22,11 +22,12 @@ TEMPLATE_PATHS = [
     expanduser("~/.marek"),
     "/usr/share/marek"
 ]
+tpl = "^.*%s[%s[0-9]*]{0,1}$"
+chld = re.escape(CHILD_TPL_FLAG)
 IGNORE_PATTERNS = [
-    "^.*\.pyc$", # all .pyc files
-    "^.*\.pyc%s[0-9]*$" % re.escape(CHILD_TPL_FLAG), # altered pyc files
-    "^.*%s%s[0-9]*$" % (re.escape(PARENT_TPL_FILE), re.escape(CHILD_TPL_FLAG)), # rules file
-    "^.*%s%s[0-9]*$" % (re.escape(RULES_FILE), re.escape(CHILD_TPL_FLAG)) # parent tpl file
+    tpl % (re.escape(".pyc"), chld), # altered pyc files
+    tpl % (re.escape(PARENT_TPL_FILE), chld), # rules file
+    tpl % (re.escape(RULES_FILE), chld) # parent tpl file
 ]
 
 
@@ -40,6 +41,7 @@ def remove_if_ignored(file_name):
     for pattern in IGNORE_PATTERNS:
         if re.match(pattern, file_name):
             remove(file_name)
+            print file_name
             return True
     return False
 
@@ -235,25 +237,22 @@ def load_chain_rules(tpl_name, project_name, quiet):
     tpl_path = tpls[tpl_name]
     tpl_file = join(tpl_path, PARENT_TPL_FILE)
     parent_rules = None
+    rules = load_rules(tpl_path, project_name, quiet)
+    data = getattr(rules, "data", {})
+    file_name = getattr(rules, "file_name", None)
+    scripts = list(getattr(rules, "postclone_scripts", []))
+    if not getattr(rules, "extend", False):
+        return rules
     if exists(tpl_file):
         with open(tpl_file) as fil:
             tpl_name = re.sub(r'[^\w-]', '', fil.read())
             parent_rules = load_chain_rules(tpl_name, project_name, quiet)
-    rules = load_rules(tpl_path, project_name, quiet)
-    if not getattr(rules, "extend", False):
-        return rules
-    ## merge_rules
-    # rules
     merged_rules = MergedRules()
     parent_data = getattr(parent_rules, "data", {})
-    data = getattr(rules, "data", {})
     parent_data.update(data)
     merged_rules.data = parent_data
-    # file_name
-    merged_rules.file_name = getattr(rules, "file_name", None) or getattr(parent_rules, "file_name", None)
-    # postclone scripts
-    parent_scripts = list(getattr(rules, "postclone_scripts", []))
-    scripts = list(getattr(parent_rules, "postclone_scripts", []))
+    merged_rules.file_name = file_name or getattr(parent_rules, "file_name", None)
+    parent_scripts = list(getattr(parent_rules, "postclone_scripts", []))
     merged_rules.postclone_scripts = list(set(parent_scripts + scripts))
     return merged_rules
 
