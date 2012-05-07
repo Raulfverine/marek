@@ -23,7 +23,10 @@ TEMPLATE_PATHS = [
     "/usr/share/marek"
 ]
 IGNORE_PATTERNS = [
-    "^.*\.pyc$" # all .pyc files
+    "^.*\.pyc$", # all .pyc files
+    "^.*\.pyc%s[0-9]*$" % re.escape(CHILD_TPL_FLAG), # altered pyc files
+    "^.*%s%s[0-9]*$" % (re.escape(PARENT_TPL_FILE), re.escape(CHILD_TPL_FLAG)), # rules file
+    "^.*%s%s[0-9]*$" % (re.escape(RULES_FILE), re.escape(CHILD_TPL_FLAG)) # parent tpl file
 ]
 
 
@@ -91,8 +94,6 @@ def process_clone(clone_path, rules):
     """ Deals with cloned template """
     # pylint: disable=R0914
     # no need to have the rules file and the parent_tpl file
-    remove(join(clone_path, RULES_FILE))
-    remove(join(clone_path, PARENT_TPL_FILE))
     jinja_env = Environment(loader=FileSystemLoader("/"))
     # init string processing function and template dict
     render = render_string_template
@@ -111,9 +112,11 @@ def process_clone(clone_path, rules):
             old_name = join(path, tfile)
             if remove_if_ignored(old_name):
                 continue
-            info = jinja_env.get_template(old_name).render(data)
-            #with open(old_name) as fil:
-            #    info = render(fil.read(), data)
+            try:
+                info = jinja_env.get_template(old_name).render(data)
+            except:
+                print old_name
+                print open(old_name).read()
             new_name = render(old_name, data)
             if old_name != new_name:
                 rename(old_name, new_name)
@@ -167,7 +170,7 @@ def process_file(src_file, dest_file):
             current_template = "%s%s%d" % (dest_file, CHILD_TPL_FLAG, cursor)
             cursor += 1
     # write data
-    with open(dest_file, "w") as fil:
+    with open(current_template, "w") as fil:
         if parent_template:
             # in the chain of templates each has to extend one another
             new_data = "\n".join([
