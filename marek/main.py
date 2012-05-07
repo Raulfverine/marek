@@ -41,7 +41,6 @@ def remove_if_ignored(file_name):
     for pattern in IGNORE_PATTERNS:
         if re.match(pattern, file_name):
             remove(file_name)
-            print file_name
             return True
     return False
 
