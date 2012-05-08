@@ -97,10 +97,10 @@ def process_cloned_file(old_name, data):
             cache.append(tfile)
     far_child = sorted(cache)[-1]
     # Actual rendering
-    jinja_env = Environment(loader=FileSystemLoader("/"))
-    info = jinja_env.get_template(old_name).render(data)
     if far_child != old_name:
         return False
+    jinja_env = Environment(loader=FileSystemLoader("/"))
+    info = jinja_env.get_template(old_name).render(data)
     for tfile in cache:
         remove(tfile)
     new_name = Template(base_name).render(data)
