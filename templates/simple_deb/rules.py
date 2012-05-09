@@ -8,6 +8,9 @@ from marek.transformers import debianize
 now = datetime.now()
 now_t = now.strftime("%a, %d %b %Y %H:%M:%S +0200")
 
+postclone_scripts = [
+    "init_git.sh"
+]
 
 data = {
    "deb_name": get_input("Debian package name", project.name, debianize),
