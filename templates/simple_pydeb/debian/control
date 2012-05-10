@@ -2,6 +2,7 @@
 Package: {{deb_name}}-doc
 Section: doc
 Architecture: all
+X-Python-Version: >= 2.6
 Depends: ${misc:Depends}
 Description: {{deb_name}} documentation
 {% endblock %}
